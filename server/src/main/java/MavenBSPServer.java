@@ -1,5 +1,4 @@
 import ch.epfl.scala.bsp4j.BuildClient;
-import ch.epfl.scala.bsp4j.BuildClientCapabilities;
 import ch.epfl.scala.bsp4j.BuildServer;
 import ch.epfl.scala.bsp4j.BuildServerCapabilities;
 import ch.epfl.scala.bsp4j.CleanCacheParams;
@@ -23,18 +22,22 @@ import ch.epfl.scala.bsp4j.SourcesResult;
 import ch.epfl.scala.bsp4j.TestParams;
 import ch.epfl.scala.bsp4j.TestResult;
 import ch.epfl.scala.bsp4j.WorkspaceBuildTargetsResult;
+import org.apache.maven.shared.invoker.*;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class MyBuildServer implements BuildServer {
+public class MavenBSPServer implements BuildServer {
 
     public BuildClient client;
 
@@ -64,8 +67,22 @@ public class MyBuildServer implements BuildServer {
 
     }
 
+    // look at plugin development
     @Override
     public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets() {
+        InvocationRequest request = new DefaultInvocationRequest();
+        String mainPom = "/home/resul/mim2021/zpp/maven-bsp/pom.xml";
+        request.setPomFile(new File(mainPom));
+        request.setGoals(Arrays.asList("clean", "compile"));
+        List<String> projects = request.getProjects();
+        Invoker invoker = new DefaultInvoker();
+        try {
+            InvocationResult result = invoker.execute(request);
+            System.out.println(result.getExitCode());
+        } catch (MavenInvocationException e) {
+            e.printStackTrace();
+        }
+        //System.out.println("projects: \n" + projects);
         return null;
     }
 
@@ -122,7 +139,7 @@ public class MyBuildServer implements BuildServer {
     public static void main(String[] args) throws ExecutionException, InterruptedException, IOException {
         int port = Integer.parseInt(args[0]);
         ExecutorService threadPool = Executors.newFixedThreadPool(1);
-        MyBuildServer localServer = new MyBuildServer();
+        MavenBSPServer localServer = new MavenBSPServer();
         ServerSocket serverSocket = new ServerSocket(port);
         System.out.println("BSP is on port " + serverSocket.getLocalPort());
         threadPool.submit(() -> {

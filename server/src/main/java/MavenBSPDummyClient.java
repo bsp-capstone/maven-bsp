@@ -13,7 +13,6 @@ import ch.epfl.scala.bsp4j.TaskStartParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class MyBuildClient implements BuildClient {
+public class MavenBSPDummyClient implements BuildClient {
 
     @Override
     public void onBuildShowMessage(ShowMessageParams params) {
@@ -58,7 +57,7 @@ public class MyBuildClient implements BuildClient {
     }
 
     public static void main(String[] args) throws IOException {
-        BuildClient localClient = new MyBuildClient();
+        BuildClient localClient = new MavenBSPDummyClient();
         ExecutorService service = Executors.newFixedThreadPool(1);
 
         String host = args[0];
