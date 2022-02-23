@@ -1,45 +1,27 @@
-import ch.epfl.scala.bsp4j.BuildClient;
-import ch.epfl.scala.bsp4j.BuildServer;
-import ch.epfl.scala.bsp4j.BuildServerCapabilities;
-import ch.epfl.scala.bsp4j.CleanCacheParams;
-import ch.epfl.scala.bsp4j.CleanCacheResult;
-import ch.epfl.scala.bsp4j.CompileParams;
-import ch.epfl.scala.bsp4j.CompileResult;
-import ch.epfl.scala.bsp4j.DependencyModulesParams;
-import ch.epfl.scala.bsp4j.DependencyModulesResult;
-import ch.epfl.scala.bsp4j.DependencySourcesParams;
-import ch.epfl.scala.bsp4j.DependencySourcesResult;
-import ch.epfl.scala.bsp4j.InitializeBuildParams;
-import ch.epfl.scala.bsp4j.InitializeBuildResult;
-import ch.epfl.scala.bsp4j.InverseSourcesParams;
-import ch.epfl.scala.bsp4j.InverseSourcesResult;
-import ch.epfl.scala.bsp4j.ResourcesParams;
-import ch.epfl.scala.bsp4j.ResourcesResult;
-import ch.epfl.scala.bsp4j.RunParams;
-import ch.epfl.scala.bsp4j.RunResult;
-import ch.epfl.scala.bsp4j.SourcesParams;
-import ch.epfl.scala.bsp4j.SourcesResult;
-import ch.epfl.scala.bsp4j.TestParams;
-import ch.epfl.scala.bsp4j.TestResult;
-import ch.epfl.scala.bsp4j.WorkspaceBuildTargetsResult;
-import org.apache.maven.shared.invoker.*;
+import ch.epfl.scala.bsp4j.*;
+import com.google.common.collect.ImmutableList;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingResult;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class MavenBSPServer implements BuildServer {
 
     public BuildClient client;
+    private Path rootUri;
 
     @Override
     public CompletableFuture<InitializeBuildResult> buildInitialize(InitializeBuildParams initializeBuildParams) {
@@ -49,6 +31,7 @@ public class MavenBSPServer implements BuildServer {
                 "1.0.0",
                 "2.0.0",
                 new BuildServerCapabilities());
+        rootUri = Path.of(initializeBuildParams.getRootUri());
         return CompletableFuture.completedFuture(initializeBuildResult);
     }
 
@@ -67,23 +50,39 @@ public class MavenBSPServer implements BuildServer {
 
     }
 
-    // look at plugin development
     @Override
     public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets() {
-        InvocationRequest request = new DefaultInvocationRequest();
-        String mainPom = "/home/resul/mim2021/zpp/maven-bsp/pom.xml";
-        request.setPomFile(new File(mainPom));
-        request.setGoals(Arrays.asList("clean", "compile"));
-        List<String> projects = request.getProjects();
-        Invoker invoker = new DefaultInvoker();
-        try {
-            InvocationResult result = invoker.execute(request);
-            System.out.println(result.getExitCode());
-        } catch (MavenInvocationException e) {
-            e.printStackTrace();
+        String mainPom = rootUri.resolve("pom.xml").toString();
+
+        ProjectBuildingResult result = PomParser.buildMavenProject(new File(mainPom));
+        MavenProject project = result.getProject();
+
+        List<BuildTarget> modulesResult = new ArrayList<>();
+
+        List<String> modules = project.getModules();
+        for (String module : modules) {
+            // Resul todo: Handle relative sub-module paths:
+            // https://maven.apache.org/xsd/maven-4.0.0.xsd
+            File moduleBase = rootUri.resolve(module)
+                    .resolve("pom.xml")
+                    .toFile();
+
+            ProjectBuildingResult moduleResult = PomParser.buildMavenProject(moduleBase);
+            MavenProject moduleProject = moduleResult.getProject();
+
+            BuildTarget target = new BuildTarget(
+                    new BuildTargetIdentifier(moduleProject.getId()),
+                    ImmutableList.of(),
+                    ImmutableList.of("JAVA"),
+                    moduleProject.getDependencies()
+                            .stream()
+                            .map(dependency -> new BuildTargetIdentifier(dependency.getManagementKey()))
+                            .collect(Collectors.toList()),
+                    new BuildTargetCapabilities(true, true, true, true)
+            );
+            modulesResult.add(target);
         }
-        //System.out.println("projects: \n" + projects);
-        return null;
+        return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));
     }
 
     @Override
