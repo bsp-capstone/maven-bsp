@@ -30,6 +30,7 @@
   <modules>
     <module>controller</module>
     <module>server</module>
+    <module>event_listener</module>
   </modules>
 
   <build>

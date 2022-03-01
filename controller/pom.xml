@@ -7,6 +7,7 @@
     <packaging>jar</packaging>
     <version>0.1.0</version>
 
+
     <parent>
         <groupId>org.jetbrains</groupId>
         <artifactId>maven-bsp</artifactId>
@@ -15,11 +16,10 @@
 
     <!-- tag::joda[] -->
      <properties>
-
          <java.version>1.8</java.version>
-           <maven.compiler.source>1.7</maven.compiler.source>
-           <maven.compiler.target>1.7</maven.compiler.target>
-         <exec.mainClass>maven_controller.MavenControllerDemo</exec.mainClass>
+           <maven.compiler.source>1.8</maven.compiler.source>
+           <maven.compiler.target>1.8</maven.compiler.target>
+         <exec.mainClass>org.jetbrains.MavenControllerDemo</exec.mainClass>
      </properties>
 
       <dependencies>
@@ -28,7 +28,18 @@
               <artifactId>maven-invoker</artifactId>
               <version>3.1.0</version>
           </dependency>
-       </dependencies>
+          <dependency>
+              <groupId>org.springframework</groupId>
+              <artifactId>maven-listener-test</artifactId>
+              <version>0.1.0</version>
+          </dependency>
+          <dependency>
+              <groupId>org.apache.maven</groupId>
+              <artifactId>maven-core</artifactId>
+              <version>3.1.1</version>
+              <scope>compile</scope>
+          </dependency>
+      </dependencies>
        <!-- end::joda[] -->
        
     <build>
@@ -43,7 +54,7 @@
                         <configuration>
                             <transformers>
                                 <transformer>
-                                    <mainClass>maven_controller.MavenControllerDemo</mainClass>
+                                    <mainClass>org.jetbrains.MavenControllerDemo</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
