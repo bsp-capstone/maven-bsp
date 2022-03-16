@@ -92,6 +92,6 @@ public class MavenBSPDummyClient implements BuildClient {
                 new BuildClientCapabilities(java.util.Collections.singletonList("scala"))
         ));
         initial.thenAccept(x -> server.onBuildInitialized());
-        initial.thenAccept(x -> server.workspaceBuildTargets());
+        initial.thenAccept(x -> System.out.println(server.workspaceBuildTargets()));
     }
 }

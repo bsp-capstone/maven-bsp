@@ -1,7 +1,31 @@
-import ch.epfl.scala.bsp4j.*;
-import com.google.common.collect.ImmutableList;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingResult;
+import ch.epfl.scala.bsp4j.BuildClient;
+import ch.epfl.scala.bsp4j.BuildServer;
+import ch.epfl.scala.bsp4j.BuildServerCapabilities;
+import ch.epfl.scala.bsp4j.BuildTarget;
+import ch.epfl.scala.bsp4j.BuildTargetCapabilities;
+import ch.epfl.scala.bsp4j.BuildTargetIdentifier;
+import ch.epfl.scala.bsp4j.CleanCacheParams;
+import ch.epfl.scala.bsp4j.CleanCacheResult;
+import ch.epfl.scala.bsp4j.CompileParams;
+import ch.epfl.scala.bsp4j.CompileResult;
+import ch.epfl.scala.bsp4j.DependencyModulesParams;
+import ch.epfl.scala.bsp4j.DependencyModulesResult;
+import ch.epfl.scala.bsp4j.DependencySourcesParams;
+import ch.epfl.scala.bsp4j.DependencySourcesResult;
+import ch.epfl.scala.bsp4j.InitializeBuildParams;
+import ch.epfl.scala.bsp4j.InitializeBuildResult;
+import ch.epfl.scala.bsp4j.InverseSourcesParams;
+import ch.epfl.scala.bsp4j.InverseSourcesResult;
+import ch.epfl.scala.bsp4j.ResourcesParams;
+import ch.epfl.scala.bsp4j.ResourcesResult;
+import ch.epfl.scala.bsp4j.RunParams;
+import ch.epfl.scala.bsp4j.RunResult;
+import ch.epfl.scala.bsp4j.SourcesParams;
+import ch.epfl.scala.bsp4j.SourcesResult;
+import ch.epfl.scala.bsp4j.TestParams;
+import ch.epfl.scala.bsp4j.TestResult;
+import ch.epfl.scala.bsp4j.WorkspaceBuildTargetsResult;
+import maven.project.MavenProjectWrapper;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 
 import java.io.File;
@@ -9,7 +33,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -53,38 +76,32 @@ public class MavenBSPServer implements BuildServer {
     @Override
     public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets() {
         String mainPom = rootUri.resolve("pom.xml").toString();
+        MavenProjectWrapper projectWrapper = MavenProjectWrapper.fromBase(new File(mainPom));
 
-        ProjectBuildingResult result = PomParser.buildMavenProject(new File(mainPom));
-        MavenProject project = result.getProject();
-
-        List<BuildTarget> modulesResult = new ArrayList<>();
-
-        List<String> modules = project.getModules();
-        for (String module : modules) {
+        List<String> modules = projectWrapper.getProject().getModules();
+        List<BuildTarget> modulesResult = modules.stream().map(module -> {
             // Resul todo: Handle relative sub-module paths:
             // https://maven.apache.org/xsd/maven-4.0.0.xsd
             File moduleBase = rootUri.resolve(module)
                     .resolve("pom.xml")
                     .toFile();
 
-            ProjectBuildingResult moduleResult = PomParser.buildMavenProject(moduleBase);
-            MavenProject moduleProject = moduleResult.getProject();
+            MavenProjectWrapper moduleProjectWrapper = MavenProjectWrapper.fromBase(moduleBase);
 
-            BuildTarget target = new BuildTarget(
-                    new BuildTargetIdentifier(moduleProject.getId()),
-                    ImmutableList.of(),
-                    ImmutableList.of("JAVA"),
-                    moduleProject.getDependencies()
-                            .stream()
-                            .map(dependency -> new BuildTargetIdentifier(dependency.getManagementKey()))
-                            .collect(Collectors.toList()),
+            return new BuildTarget(
+                    // resul todo: change to valid uri
+                    new BuildTargetIdentifier(moduleProjectWrapper.getProject().getId()),
+                    List.of(),
+                    List.of("JAVA"),
+                    moduleProjectWrapper.getDependencies(),
                     new BuildTargetCapabilities(true, true, true, true)
             );
-            modulesResult.add(target);
-        }
+        }).collect(Collectors.toList());
+        
         return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));
     }
 
+    // resul todo: return success instead of null (same for all end-points)
     @Override
     public CompletableFuture<Object> workspaceReload() {
         return null;

@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.springframework</groupId>
     <artifactId>maven-controller</artifactId>
     <packaging>jar</packaging>
     <version>0.1.0</version>
-
 
     <parent>
         <groupId>org.jetbrains</groupId>
@@ -15,33 +14,29 @@
     </parent>
 
     <!-- tag::joda[] -->
-     <properties>
-         <java.version>1.8</java.version>
-           <maven.compiler.source>1.8</maven.compiler.source>
-           <maven.compiler.target>1.8</maven.compiler.target>
-         <exec.mainClass>org.jetbrains.MavenControllerDemo</exec.mainClass>
-     </properties>
+    <properties>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <exec.mainClass>org.jetbrains.MavenControllerDemo</exec.mainClass>
+    </properties>
 
-      <dependencies>
-          <dependency>
-              <groupId>org.apache.maven.shared</groupId>
-              <artifactId>maven-invoker</artifactId>
-              <version>3.1.0</version>
-          </dependency>
-          <dependency>
-              <groupId>org.springframework</groupId>
-              <artifactId>maven-listener-test</artifactId>
-              <version>0.1.0</version>
-          </dependency>
-          <dependency>
-              <groupId>org.apache.maven</groupId>
-              <artifactId>maven-core</artifactId>
-              <version>3.1.1</version>
-              <scope>compile</scope>
-          </dependency>
-      </dependencies>
-       <!-- end::joda[] -->
-       
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-invoker</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>maven-listener-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-core</artifactId>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
