@@ -1,9 +1,9 @@
 package maven.project;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.collect.ImmutableMap;
 
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Util class to detect and return OS properties
@@ -12,8 +12,8 @@ public final class OsDetector {
     private static final CharMatcher LOWER_ALPHA_NUMERIC =
             CharMatcher.inRange('a', 'z').or(CharMatcher.inRange('0', '9'));
 
-    public static ImmutableMap<String, String> detectOsProperties() {
-        return ImmutableMap.of(
+    public static Map<String, String> detectOsProperties() {
+        return Map.of(
                 "os.detected.name",
                 osDetectedName(),
                 "os.detected.arch",

@@ -2,6 +2,7 @@ package maven.project;
 
 import ch.epfl.scala.bsp4j.BuildTargetIdentifier;
 import lombok.Value;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingResult;
 
@@ -13,17 +14,22 @@ import java.util.stream.Collectors;
 public class MavenProjectWrapper {
 
     private final ProjectBuildingResult buildingResult;
-    private final MavenProject project;
 
     public static MavenProjectWrapper fromBase(File projectBase) {
         ProjectBuildingResult result = PomParser.buildMavenProject(projectBase);
-        return new MavenProjectWrapper(result, result.getProject());
+        return new MavenProjectWrapper(result);
     }
 
     public List<BuildTargetIdentifier> getDependencies() {
+        MavenProject project = getProject();
         return project.getDependencies()
                 .stream()
-                .map(dependency -> new BuildTargetIdentifier(dependency.getManagementKey()))
+                .map(Dependency::getManagementKey)
+                .map(BuildTargetIdentifier::new)
                 .collect(Collectors.toList());
+    }
+
+    public MavenProject getProject() {
+        return buildingResult.getProject();
     }
 }
