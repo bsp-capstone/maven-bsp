@@ -1,6 +1,9 @@
 import ch.epfl.scala.bsp4j.BuildClient;
 import ch.epfl.scala.bsp4j.BuildServer;
 import ch.epfl.scala.bsp4j.BuildServerCapabilities;
+import ch.epfl.scala.bsp4j.BuildTarget;
+import ch.epfl.scala.bsp4j.BuildTargetCapabilities;
+import ch.epfl.scala.bsp4j.BuildTargetIdentifier;
 import ch.epfl.scala.bsp4j.CleanCacheParams;
 import ch.epfl.scala.bsp4j.CleanCacheResult;
 import ch.epfl.scala.bsp4j.CompileParams;
@@ -22,24 +25,26 @@ import ch.epfl.scala.bsp4j.SourcesResult;
 import ch.epfl.scala.bsp4j.TestParams;
 import ch.epfl.scala.bsp4j.TestResult;
 import ch.epfl.scala.bsp4j.WorkspaceBuildTargetsResult;
-import org.apache.maven.shared.invoker.*;
+import maven.project.MavenProjectWrapper;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 public class MavenBSPServer implements BuildServer {
 
     public BuildClient client;
+    private Path rootUri;
 
     @Override
     public CompletableFuture<InitializeBuildResult> buildInitialize(InitializeBuildParams initializeBuildParams) {
@@ -49,6 +54,7 @@ public class MavenBSPServer implements BuildServer {
                 "1.0.0",
                 "2.0.0",
                 new BuildServerCapabilities());
+        rootUri = Path.of(initializeBuildParams.getRootUri());
         return CompletableFuture.completedFuture(initializeBuildResult);
     }
 
@@ -67,25 +73,31 @@ public class MavenBSPServer implements BuildServer {
 
     }
 
-    // look at plugin development
     @Override
     public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets() {
-        InvocationRequest request = new DefaultInvocationRequest();
-        String mainPom = "/home/resul/mim2021/zpp/maven-bsp/pom.xml";
-        request.setPomFile(new File(mainPom));
-        request.setGoals(Arrays.asList("clean", "compile"));
-        List<String> projects = request.getProjects();
-        Invoker invoker = new DefaultInvoker();
-        try {
-            InvocationResult result = invoker.execute(request);
-            System.out.println(result.getExitCode());
-        } catch (MavenInvocationException e) {
-            e.printStackTrace();
-        }
-        //System.out.println("projects: \n" + projects);
-        return null;
+        String mainPom = rootUri.resolve("pom.xml").toString();
+        MavenProjectWrapper projectWrapper = MavenProjectWrapper.fromBase(new File(mainPom));
+
+        List<String> modules = projectWrapper.getProject().getModules();
+        List<BuildTarget> modulesResult = modules.stream()
+                // Resul todo: Handle relative sub-module paths:
+                // https://maven.apache.org/xsd/maven-4.0.0.xsd
+                .map(module -> rootUri.resolve(module) .resolve("pom.xml").toFile())
+                .map(MavenProjectWrapper::fromBase)
+                .map(moduleProjectWrapper -> new BuildTarget(
+                    // resul todo: change to valid uri
+                    new BuildTargetIdentifier(moduleProjectWrapper.getProject().getId()),
+                    List.of(),
+                    List.of("JAVA"),
+                    moduleProjectWrapper.getDependencies(),
+                    new BuildTargetCapabilities(true, true, true, true)
+                ))
+                .collect(Collectors.toList());
+        
+        return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));
     }
 
+    // resul todo: return success instead of null (same for all end-points)
     @Override
     public CompletableFuture<Object> workspaceReload() {
         return null;

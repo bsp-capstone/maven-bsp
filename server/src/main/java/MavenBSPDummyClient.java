@@ -88,10 +88,10 @@ public class MavenBSPDummyClient implements BuildClient {
                 "MyClient",
                 "1.0.0",
                 "2.0.0",
-                workspace.toUri().toString(),
+                workspace.toString(),
                 new BuildClientCapabilities(java.util.Collections.singletonList("scala"))
         ));
         initial.thenAccept(x -> server.onBuildInitialized());
-        initial.thenAccept(x -> server.workspaceBuildTargets());
+        initial.thenAccept(x -> System.out.println(server.workspaceBuildTargets()));
     }
 }
