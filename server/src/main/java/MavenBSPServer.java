@@ -80,16 +80,10 @@ public class MavenBSPServer implements BuildServer {
 
         List<String> modules = projectWrapper.getProject().getModules();
         List<BuildTarget> modulesResult = modules.stream()
-                .map(module -> {
-                    // Resul todo: Handle relative sub-module paths:
-                    // https://maven.apache.org/xsd/maven-4.0.0.xsd
-                    File moduleBase = rootUri.resolve(module)
-                            .resolve("pom.xml")
-                            .toFile();
-
-                    MavenProjectWrapper moduleProjectWrapper = MavenProjectWrapper.fromBase(moduleBase);
-                    return moduleProjectWrapper;
-                })
+                // Resul todo: Handle relative sub-module paths:
+                // https://maven.apache.org/xsd/maven-4.0.0.xsd
+                .map(module -> rootUri.resolve(module) .resolve("pom.xml").toFile())
+                .map(MavenProjectWrapper::fromBase)
                 .map(moduleProjectWrapper -> new BuildTarget(
                     // resul todo: change to valid uri
                     new BuildTargetIdentifier(moduleProjectWrapper.getProject().getId()),
