@@ -1,4 +1,4 @@
-package maven.project;
+package org.jetbrains.maven.project;
 
 import ch.epfl.scala.bsp4j.BuildTargetIdentifier;
 import lombok.Value;
@@ -7,6 +7,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingResult;
 
 import java.io.File;
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,8 +16,9 @@ public class MavenProjectWrapper {
 
     private final ProjectBuildingResult buildingResult;
 
-    public static MavenProjectWrapper fromBase(File projectBase) {
-        ProjectBuildingResult result = PomParser.buildMavenProject(projectBase);
+    public static MavenProjectWrapper fromBase(URI projectBase) {
+        File base = new File(projectBase.getPath());
+        ProjectBuildingResult result = PomParser.buildMavenProject(base);
         return new MavenProjectWrapper(result);
     }
 

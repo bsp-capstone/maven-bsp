@@ -1,4 +1,4 @@
-package maven.project;
+package org.jetbrains.maven.project;
 
 import org.apache.maven.execution.DefaultMavenExecutionRequest;
 import org.apache.maven.execution.MavenExecutionRequest;

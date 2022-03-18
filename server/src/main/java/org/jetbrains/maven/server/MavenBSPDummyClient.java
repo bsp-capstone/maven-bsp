@@ -1,3 +1,5 @@
+package org.jetbrains.maven.server;
+
 import ch.epfl.scala.bsp4j.BuildClient;
 import ch.epfl.scala.bsp4j.BuildClientCapabilities;
 import ch.epfl.scala.bsp4j.BuildServer;

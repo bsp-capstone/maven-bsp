@@ -1,3 +1,5 @@
+package org.jetbrains.maven.server;
+
 import ch.epfl.scala.bsp4j.BuildClient;
 import ch.epfl.scala.bsp4j.BuildServer;
 import ch.epfl.scala.bsp4j.BuildServerCapabilities;
@@ -25,14 +27,13 @@ import ch.epfl.scala.bsp4j.SourcesResult;
 import ch.epfl.scala.bsp4j.TestParams;
 import ch.epfl.scala.bsp4j.TestResult;
 import ch.epfl.scala.bsp4j.WorkspaceBuildTargetsResult;
-import maven.project.MavenProjectWrapper;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.jetbrains.maven.project.MavenProjectWrapper;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Path;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -44,7 +45,7 @@ import java.util.stream.Collectors;
 public class MavenBSPServer implements BuildServer {
 
     public BuildClient client;
-    private Path rootUri;
+    private URI rootUri;
 
     @Override
     public CompletableFuture<InitializeBuildResult> buildInitialize(InitializeBuildParams initializeBuildParams) {
@@ -54,7 +55,7 @@ public class MavenBSPServer implements BuildServer {
                 "1.0.0",
                 "2.0.0",
                 new BuildServerCapabilities());
-        rootUri = Path.of(initializeBuildParams.getRootUri());
+        rootUri = URI.create(initializeBuildParams.getRootUri());
         return CompletableFuture.completedFuture(initializeBuildResult);
     }
 
@@ -75,14 +76,14 @@ public class MavenBSPServer implements BuildServer {
 
     @Override
     public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets() {
-        String mainPom = rootUri.resolve("pom.xml").toString();
-        MavenProjectWrapper projectWrapper = MavenProjectWrapper.fromBase(new File(mainPom));
+        URI mainPom = rootUri.resolve("pom.xml");
+        MavenProjectWrapper projectWrapper = MavenProjectWrapper.fromBase(mainPom);
 
         List<String> modules = projectWrapper.getProject().getModules();
         List<BuildTarget> modulesResult = modules.stream()
                 // Resul todo: Handle relative sub-module paths:
                 // https://maven.apache.org/xsd/maven-4.0.0.xsd
-                .map(module -> rootUri.resolve(module) .resolve("pom.xml").toFile())
+                .map(module -> rootUri.resolve(module).resolve("pom.xml"))
                 .map(MavenProjectWrapper::fromBase)
                 .map(moduleProjectWrapper -> new BuildTarget(
                     // resul todo: change to valid uri

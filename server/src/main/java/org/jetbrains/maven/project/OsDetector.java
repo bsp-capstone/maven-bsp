@@ -1,4 +1,4 @@
-package maven.project;
+package org.jetbrains.maven.project;
 
 import com.google.common.base.CharMatcher;
 
