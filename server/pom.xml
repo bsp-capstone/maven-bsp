@@ -80,7 +80,7 @@
                 <version>1.7.0</version>
                 <configuration>
                     <resourceBundles>
-                        <resourceBundle>org.test:shared-resources:${project.version}</resourceBundle>
+                        <resourceBundle>org.jetbrains:shared-resources:${project.version}</resourceBundle>
                     </resourceBundles>
                 </configuration>
                 <executions>

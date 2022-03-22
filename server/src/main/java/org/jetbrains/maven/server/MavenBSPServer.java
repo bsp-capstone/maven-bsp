@@ -93,16 +93,21 @@ public class MavenBSPServer implements BuildServer {
                 // https://maven.apache.org/xsd/maven-4.0.0.xsd
                 .map(module -> rootUri.resolve(module + "/"))
                 .map(MavenProjectWrapper::fromBase)
-                .map(moduleProjectWrapper -> new BuildTarget(
-                    // resul todo: change to valid uri
-                    new BuildTargetIdentifier(moduleProjectWrapper
-                            .getProjectBase()
-                            .toString()),
-                    List.of(),
-                    List.of("JAVA"),
-                    moduleProjectWrapper.getDependencies(),
-                    new BuildTargetCapabilities(true, true, true, true)
-                ))
+                .map(moduleProjectWrapper -> {
+                    var target = new BuildTarget(
+                        // resul todo: change to valid uri
+                        new BuildTargetIdentifier(moduleProjectWrapper
+                                .getProjectBase()
+                                .toString()),
+                        List.of(),
+                        List.of("JAVA"),
+                        moduleProjectWrapper.getDependencies(),
+                        new BuildTargetCapabilities(true, true, true, true)
+                    );
+                    target.setDisplayName("displayName");
+                    target.setBaseDirectory(moduleProjectWrapper.getProjectBase().toString());
+                    return target;
+                })
                 .collect(Collectors.toList());
 
         return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));
@@ -123,7 +128,7 @@ public class MavenBSPServer implements BuildServer {
             List<SourceItem> targetItems = new ArrayList<>();
             SourceItem src = new SourceItem(
                     targetUri.resolve("src/").toString(),
-                    SourceItemKind.FILE,
+                    SourceItemKind.DIRECTORY,
                     false
             );
             targetItems.add(src);
