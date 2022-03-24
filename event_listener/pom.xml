@@ -62,7 +62,7 @@
                 <version>1.7.0</version>
                 <configuration>
                     <resourceBundles>
-                        <resourceBundle>org.jetbrains:shared-resources:${project.version}</resourceBundle>
+                        <resourceBundle>${project.groupId}:shared-resources:${project.version}</resourceBundle>
                     </resourceBundles>
                 </configuration>
                 <executions>

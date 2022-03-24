@@ -36,12 +36,13 @@ public class IntellijMavenSpy extends AbstractEventSpy {
 
     @Override
     public void close() throws Exception {
+        log.info("IntellijMavenSpy::close");
         client.close();
     }
 
     @Override
     public void onEvent(Object event) {
-
+        log.info("IntellijMavenSpy::onEvent");
         try {
             client.send(event);
         } catch (IOException e) {
@@ -71,11 +72,13 @@ public class IntellijMavenSpy extends AbstractEventSpy {
     }
 
     private static void onDependencyResolutionRequest(DependencyResolutionRequest event) {
+        log.info("IntellijMavenSpy::onDependencyResolutionRequest");
         String projectId = event.getMavenProject() == null ? "unknown" : event.getMavenProject().getId();
         printMavenEventInfo("DependencyResolutionRequest", "id", projectId);
     }
 
     private static void onDependencyResolutionResult(DependencyResolutionResult event) {
+        log.info("IntellijMavenSpy::onDependencyResolutionResult");
         List<Exception> errors = event.getCollectionErrors();
         StringBuilder result = new StringBuilder();
         for (Exception e : errors) {
@@ -88,6 +91,7 @@ public class IntellijMavenSpy extends AbstractEventSpy {
     }
 
     private static void collectAndPrintLastLinesForEA(Throwable e) {
+        log.info("IntellijMavenSpy::collectAndPrintLastLinesForEA");
         //need to collect last 3 lines to send to EA
         int lines = Math.max(e.getStackTrace().length, 3);
         StringBuilder builder = new StringBuilder();
@@ -99,6 +103,7 @@ public class IntellijMavenSpy extends AbstractEventSpy {
     }
 
     private static void onRepositoryEvent(RepositoryEvent event) {
+        log.info("IntellijMavenSpy::onRepositoryEvent");
         String errMessage = event.getException() == null ? "" : event.getException().getMessage();
         String path = event.getFile() == null ? "" : event.getFile().getPath();
         String artifactCoord = event.getArtifact() == null ? "" : event.getArtifact().toString();
@@ -106,6 +111,7 @@ public class IntellijMavenSpy extends AbstractEventSpy {
     }
 
     private static void onExecutionEvent(ExecutionEvent event) {
+        log.info("IntellijMavenSpy::onExecutionEvent");
         MojoExecution mojoExec = event.getMojoExecution();
         String projectId = event.getProject() == null ? "unknown" : event.getProject().getId();
         if (mojoExec != null) {

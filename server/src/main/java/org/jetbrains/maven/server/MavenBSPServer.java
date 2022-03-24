@@ -57,7 +57,7 @@ public class MavenBSPServer implements BuildServer {
 
     @Override
     public CompletableFuture<InitializeBuildResult> buildInitialize(InitializeBuildParams initializeBuildParams) {
-        log.trace("MyBuildServer::buildInitialize");
+        log.info("MyBuildServer::buildInitialize started");
         InitializeBuildResult initializeBuildResult = new InitializeBuildResult(
                 "maven-bsp",
                 "1.0.0",
@@ -69,7 +69,7 @@ public class MavenBSPServer implements BuildServer {
 
     @Override
     public void onBuildInitialized() {
-        log.trace("MyBuildServer::buildInitialized");
+        log.info("MyBuildServer::buildInitialized");
     }
 
     @Override
@@ -122,24 +122,25 @@ public class MavenBSPServer implements BuildServer {
     @Override
     public CompletableFuture<SourcesResult> buildTargetSources(SourcesParams sourcesParams) {
         List<BuildTargetIdentifier> targets = sourcesParams.getTargets();
-        List<SourcesItem> items = new ArrayList<>();
-        targets.forEach(target -> {
-            URI targetUri = URI.create(target.getUri());
-            List<SourceItem> targetItems = new ArrayList<>();
-            SourceItem src = new SourceItem(
-                    targetUri.resolve("src/").toString(),
-                    SourceItemKind.DIRECTORY,
-                    false
-            );
-            targetItems.add(src);
-            SourcesItem targetSources = new SourcesItem(
-                    target,
-                    targetItems
-            );
-            List<String> roots = List.of(targetUri.toString());
-            targetSources.setRoots(roots);
-            items.add(targetSources);
-        });
+        List<SourcesItem> items = targets.stream()
+            .map(target -> {
+                URI targetUri = URI.create(target.getUri());
+                List<SourceItem> targetItems = new ArrayList<>();
+                SourceItem src = new SourceItem(
+                        targetUri.resolve("src/").toString(),
+                        SourceItemKind.DIRECTORY,
+                        false
+                );
+                targetItems.add(src);
+                SourcesItem targetSources = new SourcesItem(
+                        target,
+                        targetItems
+                );
+                List<String> roots = List.of(targetUri.toString());
+                targetSources.setRoots(roots);
+                return targetSources;
+            })
+            .collect(Collectors.toList());
         return CompletableFuture.completedFuture(new SourcesResult(items));
     }
 

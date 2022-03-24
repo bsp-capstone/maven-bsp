@@ -30,9 +30,10 @@ public class MavenController {
                 EventServer server = new EventServer(port);
                 while (server.alive()) {
                     EventPacket eventPacket = server.getPacket();
-                    String message =  eventPacket.getEvent();
-                    if(message != null)
+                    String message = eventPacket.getEvent();
+                    if (message != null) {
                         log.error("startServer message is null " + eventPacket.getEvent());
+                    }
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -40,8 +41,7 @@ public class MavenController {
         });
 
         messenger.start();
-
-        log.trace("Event Server Started");
+        log.info("Event Server Started");
     }
 
     private void exec(InvocationRequest request) throws IOException {
@@ -58,10 +58,10 @@ public class MavenController {
         try {
             InvocationResult result = invoker.execute(request);
             if (result.getExitCode() != 0) {
-                log.error("maven command was unsuccessful");
-                throw new IllegalStateException( "Build failed." );
+                log.error("maven command was unsuccessful: " + result.getExitCode());
+                throw new IllegalStateException("Build failed.");
             }
-
+            log.info("Invoker execution successful");
         } catch (Exception e) {
             // Signals an error during the construction of the command line used to invoke Maven
             // e.g. illegal invocation arguments.
@@ -70,7 +70,9 @@ public class MavenController {
     }
 
     public void compile() throws IOException {
+        log.info("MavenController::compile started");
         compile(false);
+        log.info("MavenController::compile ended");
     }
 
     public void compile(boolean clean) throws IOException {
@@ -84,7 +86,9 @@ public class MavenController {
     }
 
     public void install() throws IOException {
+        log.info("MavenController::install started");
         install(false);
+        log.info("MavenController::install ended");
     }
 
     public void install(boolean clean) throws IOException {
