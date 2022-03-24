@@ -15,11 +15,12 @@ import java.util.stream.Collectors;
 public class MavenProjectWrapper {
 
     private final ProjectBuildingResult buildingResult;
+    private final URI projectBase;
 
     public static MavenProjectWrapper fromBase(URI projectBase) {
-        File base = new File(projectBase.getPath());
+        File base = new File(projectBase.resolve("pom.xml").getPath());
         ProjectBuildingResult result = PomParser.buildMavenProject(base);
-        return new MavenProjectWrapper(result);
+        return new MavenProjectWrapper(result, projectBase);
     }
 
     public List<BuildTargetIdentifier> getDependencies() {

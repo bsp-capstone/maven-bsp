@@ -1,15 +1,20 @@
 package org.jetbrains;
 
-import org.apache.maven.shared.invoker.*;
-
+import lombok.extern.log4j.Log4j2;
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
+import org.apache.maven.shared.invoker.Invoker;
 import org.jetbrains.maven.server.EventPacket;
+
 import java.io.File;
 import java.io.IOException;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
 
+@Log4j2
 public class MavenController {
     private final String projectDirectory;
     Invoker invoker;
@@ -25,9 +30,10 @@ public class MavenController {
                 EventServer server = new EventServer(port);
                 while (server.alive()) {
                     EventPacket eventPacket = server.getPacket();
-                    String message =  eventPacket.getEvent();
-                    if(message != null)
-                        System.out.println(eventPacket.getEvent());
+                    String message = eventPacket.getEvent();
+                    if (message != null) {
+                        log.error("startServer message is null " + eventPacket.getEvent());
+                    }
                 }
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
@@ -35,11 +41,8 @@ public class MavenController {
         });
 
         messenger.start();
-
-        System.out.println("Event Server Started");
+        log.info("Event Server Started");
     }
-
-
 
     private void exec(InvocationRequest request) throws IOException {
         request.setBaseDirectory(new File(projectDirectory));
@@ -55,19 +58,21 @@ public class MavenController {
         try {
             InvocationResult result = invoker.execute(request);
             if (result.getExitCode() != 0) {
-                System.err.println("ERROR maven command was unsuccessful");
-                throw new IllegalStateException( "Build failed." );
+                log.error("maven command was unsuccessful: " + result.getExitCode());
+                throw new IllegalStateException("Build failed.");
             }
-
+            log.info("Invoker execution successful");
         } catch (Exception e) {
             // Signals an error during the construction of the command line used to invoke Maven
             // e.g. illegal invocation arguments.
-            System.out.println(e.getMessage());
+            log.error(e.getMessage());
         }
     }
 
     public void compile() throws IOException {
+        log.info("MavenController::compile started");
         compile(false);
+        log.info("MavenController::compile ended");
     }
 
     public void compile(boolean clean) throws IOException {
@@ -81,7 +86,9 @@ public class MavenController {
     }
 
     public void install() throws IOException {
+        log.info("MavenController::install started");
         install(false);
+        log.info("MavenController::install ended");
     }
 
     public void install(boolean clean) throws IOException {
