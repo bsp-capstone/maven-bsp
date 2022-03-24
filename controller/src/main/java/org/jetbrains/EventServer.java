@@ -9,6 +9,13 @@ import java.net.Socket;
 
 public class EventServer {
     private boolean is_alive;
+<<<<<<< HEAD
+=======
+
+    public boolean alive() {
+        return is_alive;
+    }
+>>>>>>> 6198c5f (Event Server)
     ServerSocket serverSocket;
     Socket socket = null;
     ObjectInputStream inStream;
@@ -31,8 +38,14 @@ public class EventServer {
         }
         return eventPacket;
     }
+<<<<<<< HEAD
 
     public boolean alive() {
         return is_alive;
+=======
+    public EventServer(ServerSocket serverSocket) throws IOException, ClassNotFoundException {
+        this.serverSocket = serverSocket;
+        is_alive = true;
+>>>>>>> 6198c5f (Event Server)
     }
 }

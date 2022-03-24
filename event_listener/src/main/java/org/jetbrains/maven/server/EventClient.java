@@ -1,6 +1,9 @@
 package org.jetbrains.maven.server;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.maven.execution.ExecutionEvent;
+import org.apache.maven.plugin.MojoExecution;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -10,16 +13,32 @@ public class EventClient {
     Socket socket;
     ObjectOutputStream outStream;
 
-    public EventClient(String host, int port) throws IOException {
-        socket = new Socket(host, port);
+    public EventClient(String host, String port) throws IOException {
+        socket = new Socket(host, Integer.parseInt(port));
         outStream = new ObjectOutputStream(socket.getOutputStream());
     }
-
+    private static String getErrorMessage(Exception exception) {
+        String baseMessage = exception.getMessage();
+        Throwable rootCause = ExceptionUtils.getRootCause(exception);
+        String rootMessage = rootCause != null ? rootCause.getMessage() : StringUtils.EMPTY;
+        return  "ERROR=" + rootMessage + "MESSAGE=" + baseMessage;
+    }
     public void send(Object packet) throws IOException {
         EventPacket eventPacket = null;
+        if (packet instanceof String) {
+            eventPacket = new EventPacket((String)packet);
+        }
+        if (packet instanceof ExecutionEvent) {
+            ExecutionEvent event = (ExecutionEvent)packet;
+            MojoExecution mojoExec = event.getMojoExecution();
 
-        if (packet instanceof ExecutionEvent)
-            eventPacket = new EventPacket(packet.toString());
+            if (mojoExec != null) {
+                String errMessage = (event.getException() == null) ? event.getType().name() : getErrorMessage(event.getException());
+                eventPacket = new EventPacket(errMessage);
+            }
+        }
+
+
 
         if(eventPacket != null)
             outStream.writeObject(eventPacket);

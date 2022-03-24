@@ -14,5 +14,3 @@ public class EventPacket implements Serializable {
         return message;
     }
 }
-
-

@@ -1,11 +1,9 @@
 package org.jetbrains;
 
-import java.io.IOException;
-
 public class MavenControllerDemo {
-    public static void main(String[] args) throws IOException {
-        MavenController controller = new MavenController("mvn_test_project/");
-        controller.install();
-        controller.compile();
+    public static void main(String[] args) {
+        MavenController controller = new MavenController();
+        controller.install("mvn_test_project/");
+        controller.compile("mvn_test_project/");
     }
 }

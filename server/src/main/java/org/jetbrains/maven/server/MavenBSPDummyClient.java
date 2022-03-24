@@ -35,17 +35,17 @@ public class MavenBSPDummyClient implements BuildClient {
 
     @Override
     public void onBuildTaskStart(TaskStartParams params) {
-
+        System.out.println("Build Task Started with task id: " + params.getTaskId().getId());
     }
 
     @Override
     public void onBuildTaskProgress(TaskProgressParams params) {
-
+        System.out.println("progress event: " + params.getMessage());
     }
 
     @Override
     public void onBuildTaskFinish(TaskFinishParams params) {
-
+        System.out.println("Build task Finished with code: " + params.getStatus());
     }
 
     @Override
