@@ -1,7 +1,6 @@
 package org.jetbrains;
 
 import org.jetbrains.maven.server.EventPacket;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.ServerSocket;
@@ -9,13 +8,6 @@ import java.net.Socket;
 
 public class EventServer {
     private boolean is_alive;
-<<<<<<< HEAD
-=======
-
-    public boolean alive() {
-        return is_alive;
-    }
->>>>>>> 6198c5f (Event Server)
     ServerSocket serverSocket;
     Socket socket = null;
     ObjectInputStream inStream;
@@ -26,10 +18,13 @@ public class EventServer {
     }
 
     public EventPacket getPacket() throws IOException, ClassNotFoundException {
+        System.out.println("Server waiting for connection...");
         if (socket == null) {
             socket = serverSocket.accept(); // Blocking
             inStream = new ObjectInputStream(socket.getInputStream());
         }
+        System.out.println("Got connection waiting for packet...");
+
 
         EventPacket eventPacket = (EventPacket)inStream.readObject();
         if (eventPacket.getEvent() == null) {
@@ -38,14 +33,12 @@ public class EventServer {
         }
         return eventPacket;
     }
-<<<<<<< HEAD
 
     public boolean alive() {
         return is_alive;
-=======
+    }
     public EventServer(ServerSocket serverSocket) throws IOException, ClassNotFoundException {
         this.serverSocket = serverSocket;
         is_alive = true;
->>>>>>> 6198c5f (Event Server)
     }
 }
