@@ -67,14 +67,15 @@ public class MavenController {
                         }
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
+                        log.error(e.getMessage());
                     }
                 }
             }.init(serverSocket)).start();
         } catch (IOException e) {
             e.printStackTrace();
+            log.error(e.getMessage());
         }
-
-        System.out.println("Event Server Started on port " + port);
+        log.info("Event Server Started on port " + port);
         return port;
     }
 
