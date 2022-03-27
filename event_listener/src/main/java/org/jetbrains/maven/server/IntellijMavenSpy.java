@@ -9,24 +9,25 @@ import java.io.IOException;
 @Singleton
 // TODO: Log4j possibly doesn't work with EventSpy
 public class IntellijMavenSpy extends AbstractEventSpy {
-    private EventClient client;
+  private EventClient client;
 
-    @Override
-    public void init(Context context) throws Exception {
-        System.out.println("Project Directory: " + context.getData().get("workingDirectory"));
-        client = new EventClient("localhost", System.getenv("BSP_EVENT_PORT"));
-    }
+  @Override
+  public void init(Context context) throws Exception {
+    System.out.println("Project Directory: " + context.getData().get("workingDirectory"));
+    client = new EventClient("localhost", System.getenv("BSP_EVENT_PORT"));
+  }
 
-    @Override
-    public void close() throws Exception {
-        client.close();
+  @Override
+  public void close() throws Exception {
+    client.close();
+  }
+
+  @Override
+  public void onEvent(Object event) {
+    try {
+      client.send(event);
+    } catch (IOException e) {
+      e.printStackTrace();
     }
-    @Override
-    public void onEvent(Object event) {
-        try {
-            client.send(event);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+  }
 }

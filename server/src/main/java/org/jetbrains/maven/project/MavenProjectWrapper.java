@@ -14,25 +14,24 @@ import java.util.stream.Collectors;
 @Value
 public class MavenProjectWrapper {
 
-    private final ProjectBuildingResult buildingResult;
-    private final URI projectBase;
+  private final ProjectBuildingResult buildingResult;
+  private final URI projectBase;
 
-    public static MavenProjectWrapper fromBase(URI projectBase) {
-        File base = new File(projectBase.resolve("pom.xml").getPath());
-        ProjectBuildingResult result = PomParser.buildMavenProject(base);
-        return new MavenProjectWrapper(result, projectBase);
-    }
+  public static MavenProjectWrapper fromBase(URI projectBase) {
+    File base = new File(projectBase.resolve("pom.xml").getPath());
+    ProjectBuildingResult result = PomParser.buildMavenProject(base);
+    return new MavenProjectWrapper(result, projectBase);
+  }
 
-    public List<BuildTargetIdentifier> getDependencies() {
-        MavenProject project = getProject();
-        return project.getDependencies()
-                .stream()
-                .map(Dependency::getManagementKey)
-                .map(BuildTargetIdentifier::new)
-                .collect(Collectors.toList());
-    }
+  public List<BuildTargetIdentifier> getDependencies() {
+    MavenProject project = getProject();
+    return project.getDependencies().stream()
+        .map(Dependency::getManagementKey)
+        .map(BuildTargetIdentifier::new)
+        .collect(Collectors.toList());
+  }
 
-    public MavenProject getProject() {
-        return buildingResult.getProject();
-    }
+  public MavenProject getProject() {
+    return buildingResult.getProject();
+  }
 }
