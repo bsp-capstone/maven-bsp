@@ -1,6 +1,19 @@
 package org.jetbrains.maven.server;
 
-import ch.epfl.scala.bsp4j.*;
+import ch.epfl.scala.bsp4j.BuildClient;
+import ch.epfl.scala.bsp4j.BuildClientCapabilities;
+import ch.epfl.scala.bsp4j.BuildServer;
+import ch.epfl.scala.bsp4j.BuildTargetIdentifier;
+import ch.epfl.scala.bsp4j.CompileParams;
+import ch.epfl.scala.bsp4j.DidChangeBuildTarget;
+import ch.epfl.scala.bsp4j.InitializeBuildParams;
+import ch.epfl.scala.bsp4j.InitializeBuildResult;
+import ch.epfl.scala.bsp4j.LogMessageParams;
+import ch.epfl.scala.bsp4j.PublishDiagnosticsParams;
+import ch.epfl.scala.bsp4j.ShowMessageParams;
+import ch.epfl.scala.bsp4j.TaskFinishParams;
+import ch.epfl.scala.bsp4j.TaskProgressParams;
+import ch.epfl.scala.bsp4j.TaskStartParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 
 import java.io.File;

@@ -34,6 +34,7 @@ public class ServerProxy {
                         .setExecutorService(threadPool)
                         .create();
 
+        mavenBSPServer.setClient(launcher.getRemoteProxy());
         launcher.startListening();
     }
 }
