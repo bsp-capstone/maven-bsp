@@ -3,6 +3,8 @@ package org.jetbrains.maven.server;
 import ch.epfl.scala.bsp4j.BuildClient;
 import ch.epfl.scala.bsp4j.BuildClientCapabilities;
 import ch.epfl.scala.bsp4j.BuildServer;
+import ch.epfl.scala.bsp4j.BuildTargetIdentifier;
+import ch.epfl.scala.bsp4j.CompileParams;
 import ch.epfl.scala.bsp4j.DidChangeBuildTarget;
 import ch.epfl.scala.bsp4j.InitializeBuildParams;
 import ch.epfl.scala.bsp4j.InitializeBuildResult;
@@ -14,9 +16,12 @@ import ch.epfl.scala.bsp4j.TaskProgressParams;
 import ch.epfl.scala.bsp4j.TaskStartParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -35,17 +40,17 @@ public class MavenBSPDummyClient implements BuildClient {
 
     @Override
     public void onBuildTaskStart(TaskStartParams params) {
-
+        System.out.println("Build Task Started with task id: " + params.getTaskId().getId());
     }
 
     @Override
     public void onBuildTaskProgress(TaskProgressParams params) {
-
+        System.out.println("progress event: " + params.getMessage());
     }
 
     @Override
     public void onBuildTaskFinish(TaskFinishParams params) {
-
+        System.out.println("Build task Finished with code: " + params.getStatus());
     }
 
     @Override
@@ -95,5 +100,11 @@ public class MavenBSPDummyClient implements BuildClient {
         ));
         initial.thenAccept(x -> server.onBuildInitialized());
         initial.thenAccept(x -> System.out.println(server.workspaceBuildTargets()));
+
+        List<BuildTargetIdentifier> targets = new ArrayList<>();
+        String proj = new File("../controller/mvn_test_project").getCanonicalPath();
+        targets.add(new BuildTargetIdentifier(proj));
+
+        initial.thenAccept(x -> server.buildTargetCompile(new CompileParams(targets)));
     }
 }

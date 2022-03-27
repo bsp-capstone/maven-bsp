@@ -1,7 +1,6 @@
 package org.jetbrains;
 
 import org.jetbrains.maven.server.EventPacket;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.ServerSocket;
@@ -13,16 +12,12 @@ public class EventServer {
     Socket socket = null;
     ObjectInputStream inStream;
 
-    public EventServer(int port) throws IOException, ClassNotFoundException {
-        serverSocket = new ServerSocket(port);
-        is_alive = true;
-    }
-
     public EventPacket getPacket() throws IOException, ClassNotFoundException {
         if (socket == null) {
             socket = serverSocket.accept(); // Blocking
             inStream = new ObjectInputStream(socket.getInputStream());
         }
+
 
         EventPacket eventPacket = (EventPacket)inStream.readObject();
         if (eventPacket.getEvent() == null) {
@@ -34,5 +29,9 @@ public class EventServer {
 
     public boolean alive() {
         return is_alive;
+    }
+    public EventServer(ServerSocket serverSocket) throws IOException, ClassNotFoundException {
+        this.serverSocket = serverSocket;
+        is_alive = true;
     }
 }

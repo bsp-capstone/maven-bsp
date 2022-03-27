@@ -1,4 +1,9 @@
 package org.jetbrains.maven.server;
+import ch.epfl.scala.bsp4j.TaskFinishParams;
+import ch.epfl.scala.bsp4j.TaskId;
+import ch.epfl.scala.bsp4j.TaskStartParams;
+import lombok.Setter;
+import org.jetbrains.MavenController;
 
 import ch.epfl.scala.bsp4j.BuildClient;
 import ch.epfl.scala.bsp4j.BuildServer;
@@ -52,7 +57,7 @@ import java.util.stream.Collectors;
 @Log4j2
 public class MavenBSPServer implements BuildServer {
 
-    public BuildClient client;
+    @Setter public BuildClient client;
     private URI rootUri;
 
     @Override
@@ -170,7 +175,13 @@ public class MavenBSPServer implements BuildServer {
 
     @Override
     public CompletableFuture<CompileResult> buildTargetCompile(CompileParams compileParams) {
-        return CompletableFuture.completedFuture(new CompileResult(StatusCode.OK));
+        MavenController controller = new MavenController(client);
+        client.onBuildTaskStart(new TaskStartParams(new TaskId("todo")));
+
+        StatusCode exitCode = controller.compileTargets(compileParams);
+
+        client.onBuildTaskFinish(new TaskFinishParams(new TaskId("todo"), exitCode));
+        return CompletableFuture.completedFuture(new CompileResult(exitCode));
     }
 
     @Override
