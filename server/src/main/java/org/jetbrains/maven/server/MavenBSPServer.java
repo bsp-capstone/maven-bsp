@@ -1,16 +1,11 @@
 package org.jetbrains.maven.server;
 
-import ch.epfl.scala.bsp4j.TaskFinishParams;
-import ch.epfl.scala.bsp4j.TaskId;
-import ch.epfl.scala.bsp4j.TaskStartParams;
-import lombok.Setter;
-import org.jetbrains.MavenController;
-
 import ch.epfl.scala.bsp4j.BuildClient;
 import ch.epfl.scala.bsp4j.BuildServer;
 import ch.epfl.scala.bsp4j.BuildServerCapabilities;
 import ch.epfl.scala.bsp4j.BuildTarget;
 import ch.epfl.scala.bsp4j.BuildTargetCapabilities;
+import ch.epfl.scala.bsp4j.BuildTargetDataKind;
 import ch.epfl.scala.bsp4j.BuildTargetIdentifier;
 import ch.epfl.scala.bsp4j.CleanCacheParams;
 import ch.epfl.scala.bsp4j.CleanCacheResult;
@@ -24,6 +19,7 @@ import ch.epfl.scala.bsp4j.InitializeBuildParams;
 import ch.epfl.scala.bsp4j.InitializeBuildResult;
 import ch.epfl.scala.bsp4j.InverseSourcesParams;
 import ch.epfl.scala.bsp4j.InverseSourcesResult;
+import ch.epfl.scala.bsp4j.JvmBuildTarget;
 import ch.epfl.scala.bsp4j.ResourcesItem;
 import ch.epfl.scala.bsp4j.ResourcesParams;
 import ch.epfl.scala.bsp4j.ResourcesResult;
@@ -35,13 +31,12 @@ import ch.epfl.scala.bsp4j.SourcesItem;
 import ch.epfl.scala.bsp4j.SourcesParams;
 import ch.epfl.scala.bsp4j.SourcesResult;
 import ch.epfl.scala.bsp4j.StatusCode;
+import ch.epfl.scala.bsp4j.TaskFinishParams;
+import ch.epfl.scala.bsp4j.TaskId;
+import ch.epfl.scala.bsp4j.TaskStartParams;
 import ch.epfl.scala.bsp4j.TestParams;
 import ch.epfl.scala.bsp4j.TestResult;
 import ch.epfl.scala.bsp4j.WorkspaceBuildTargetsResult;
-import lombok.extern.log4j.Log4j2;
-import org.eclipse.lsp4j.jsonrpc.Launcher;
-import org.jetbrains.maven.project.MavenProjectWrapper;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -49,11 +44,18 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.jetbrains.MavenController;
+import org.jetbrains.maven.project.MavenProjectWrapper;
+import org.jetbrains.maven.project.ProjectId;
 
 @Log4j2
 public class MavenBSPServer implements BuildServer {
@@ -86,33 +88,30 @@ public class MavenBSPServer implements BuildServer {
 
   @Override
   public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets() {
-    URI mainPom = rootUri.resolve("pom.xml");
-    MavenProjectWrapper projectWrapper = MavenProjectWrapper.fromBase(mainPom);
-
-    List<String> modules = projectWrapper.getProject().getModules();
-    List<BuildTarget> modulesResult =
-        modules.stream()
-            // Resul todo: Handle relative sub-module paths:
-            // https://maven.apache.org/xsd/maven-4.0.0.xsd
-            .map(module -> rootUri.resolve(module + "/"))
-            .map(MavenProjectWrapper::fromBase)
-            .map(
-                moduleProjectWrapper -> {
-                  var target =
-                      new BuildTarget(
-                          // resul todo: change to valid uri
-                          new BuildTargetIdentifier(
-                              moduleProjectWrapper.getProjectBase().toString()),
-                          List.of(),
-                          List.of("JAVA"),
-                          moduleProjectWrapper.getDependencies(),
-                          new BuildTargetCapabilities(true, true, true, true));
-                  target.setDisplayName("displayName");
-                  target.setBaseDirectory(moduleProjectWrapper.getProjectBase().toString());
-                  return target;
-                })
-            .collect(Collectors.toList());
-
+    MavenProjectWrapper projectWrapper = MavenProjectWrapper.fromBase(rootUri);
+    Map<ProjectId, MavenProjectWrapper> modulesMap = projectWrapper.getModuleProjects();
+    List<BuildTarget> modulesResult = new ArrayList<>();
+    for (Map.Entry<ProjectId, MavenProjectWrapper> module : modulesMap.entrySet()) {
+      MavenProjectWrapper moduleProjectWrapper = module.getValue();
+      var target =
+          new BuildTarget(
+              new BuildTargetIdentifier(
+                  moduleProjectWrapper.getProjectBase().toString()),
+              List.of(),
+              List.of("JAVA"),
+              moduleProjectWrapper.getDependencies(modulesMap),
+              new BuildTargetCapabilities(true, true, true, true));
+      target.setDisplayName(moduleProjectWrapper.getProject().getName());
+      log.info("target {} project base {}",
+          moduleProjectWrapper.getProject().getName(),
+          moduleProjectWrapper.getProjectBase().toString());
+      target.setBaseDirectory(moduleProjectWrapper.getProjectBase().toString());
+      target.setDataKind(BuildTargetDataKind.JVM);
+      target.setData(new JvmBuildTarget(
+          // todo resul
+          "file:/usr/lib/jvm/java-11-openjdk-11.0.14.1.1-5.fc35.x86_64/", "11"));
+      modulesResult.add(target);
+    }
     return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));
   }
 
@@ -131,12 +130,13 @@ public class MavenBSPServer implements BuildServer {
                 target -> {
                   URI targetUri = URI.create(target.getUri());
                   List<SourceItem> targetItems = new ArrayList<>();
+                  String targetSourcesUri = targetUri.resolve("src/main/java/").toString();
                   SourceItem src =
-                      new SourceItem(
-                          targetUri.resolve("src/").toString(), SourceItemKind.DIRECTORY, false);
+                      new SourceItem(targetSourcesUri, SourceItemKind.DIRECTORY, false);
+                  log.info("target {} with sources item {}", targetUri, src.getUri());
                   targetItems.add(src);
                   SourcesItem targetSources = new SourcesItem(target, targetItems);
-                  List<String> roots = List.of(targetUri.toString());
+                  List<String> roots = List.of(targetSourcesUri);
                   targetSources.setRoots(roots);
                   return targetSources;
                 })
@@ -164,7 +164,7 @@ public class MavenBSPServer implements BuildServer {
         target -> {
           URI targetUri = URI.create(target.getUri());
           List<String> targetResources = new ArrayList<>();
-          String resourceUri = targetUri.resolve("resources/").toString();
+          String resourceUri = targetUri.resolve("src/main/resources/").toString();
           targetResources.add(resourceUri);
           resources.add(new ResourcesItem(target, targetResources));
         });
