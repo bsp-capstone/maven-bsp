@@ -95,21 +95,22 @@ public class MavenBSPServer implements BuildServer {
       MavenProjectWrapper moduleProjectWrapper = module.getValue();
       var target =
           new BuildTarget(
-              new BuildTargetIdentifier(
-                  moduleProjectWrapper.getProjectBase().toString()),
+              new BuildTargetIdentifier(moduleProjectWrapper.getProjectBase().toString()),
               List.of(),
               List.of("JAVA"),
               moduleProjectWrapper.getDependencies(modulesMap),
               new BuildTargetCapabilities(true, true, true, true));
       target.setDisplayName(moduleProjectWrapper.getProject().getName());
-      log.info("target {} project base {}",
+      log.info(
+          "target {} project base {}",
           moduleProjectWrapper.getProject().getName(),
           moduleProjectWrapper.getProjectBase().toString());
       target.setBaseDirectory(moduleProjectWrapper.getProjectBase().toString());
       target.setDataKind(BuildTargetDataKind.JVM);
-      target.setData(new JvmBuildTarget(
-          // todo resul
-          "file:/usr/lib/jvm/java-11-openjdk-11.0.14.1.1-5.fc35.x86_64/", "11"));
+      target.setData(
+          new JvmBuildTarget(
+              // todo resul
+              "file:/usr/lib/jvm/java-11-openjdk-11.0.14.1.1-5.fc35.x86_64/", "11"));
       modulesResult.add(target);
     }
     return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));

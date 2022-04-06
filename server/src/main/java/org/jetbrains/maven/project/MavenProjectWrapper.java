@@ -29,11 +29,9 @@ public class MavenProjectWrapper {
     MavenProject project = getProject();
     List<BuildTargetIdentifier> dependencies = new ArrayList<>();
     for (Dependency dependency : project.getDependencies()) {
-      ProjectId projectId = new ProjectId(
-          dependency.getGroupId(),
-          dependency.getArtifactId(),
-          dependency.getVersion()
-      );
+      ProjectId projectId =
+          new ProjectId(
+              dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion());
       if (modules.containsKey(projectId)) {
         MavenProject dependentProject = modules.get(projectId).getProject();
         String dependentProjectUri = dependentProject.getBasedir().toURI().toString();
@@ -53,11 +51,8 @@ public class MavenProjectWrapper {
       URI moduleURI = projectBase.resolve(module + "/");
       MavenProjectWrapper wrapper = MavenProjectWrapper.fromBase(moduleURI);
       MavenProject project = wrapper.getProject();
-      ProjectId projectId = new ProjectId(
-          project.getGroupId(),
-          project.getArtifactId(),
-          project.getVersion()
-      );
+      ProjectId projectId =
+          new ProjectId(project.getGroupId(), project.getArtifactId(), project.getVersion());
       modulesMap.put(projectId, wrapper);
     }
     return modulesMap;
