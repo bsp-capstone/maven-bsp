@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
-            <artifactId>maven-listener-test</artifactId>
+            <artifactId>event-listener</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>

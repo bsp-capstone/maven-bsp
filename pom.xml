@@ -130,7 +130,7 @@
     <modules>
         <module>controller</module>
         <module>server</module>
-        <module>event_listener</module>
+        <module>event-listener</module>
         <module>shared-resources</module>
     </modules>
 
