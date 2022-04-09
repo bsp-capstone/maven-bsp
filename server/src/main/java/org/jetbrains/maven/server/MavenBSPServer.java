@@ -114,9 +114,8 @@ public class MavenBSPServer implements BuildServer {
           new JvmBuildTarget(
               // todo Resul:
               // https://maven.apache.org/plugins/maven-compiler-plugin/examples/compile-using-different-jdk.html
-              // 
-              "file:" + javaHome,
-              javaVersion));
+              //
+              "file:" + javaHome, javaVersion));
       modulesResult.add(target);
     }
     return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));
