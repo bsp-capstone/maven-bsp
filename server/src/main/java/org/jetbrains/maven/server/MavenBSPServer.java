@@ -107,10 +107,16 @@ public class MavenBSPServer implements BuildServer {
           moduleProjectWrapper.getProjectBase().toString());
       target.setBaseDirectory(moduleProjectWrapper.getProjectBase().toString());
       target.setDataKind(BuildTargetDataKind.JVM);
+      String javaHome = System.getProperty("java.home");
+      String javaVersion = System.getProperty("java.version");
+      log.info("java.home {} \n java.version {}", javaHome, javaVersion);
       target.setData(
           new JvmBuildTarget(
-              // todo resul
-              "file:/usr/lib/jvm/java-11-openjdk-11.0.14.1.1-5.fc35.x86_64/", "11"));
+              // todo Resul:
+              // https://maven.apache.org/plugins/maven-compiler-plugin/examples/compile-using-different-jdk.html
+              // 
+              "file:" + javaHome,
+              javaVersion));
       modulesResult.add(target);
     }
     return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));
