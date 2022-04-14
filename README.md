@@ -15,7 +15,7 @@ Create following `JSON` file in `.bsp` folder within your project, e.g.:
 }
 ```
 
-In `argv` specify path to connection establishing script and set correct path to Maven BSP:
+In `argv` specify path to connection establishing script and set correct path to Maven BSP within the script:
 
 ```bash
 #!/usr/bin/env bash
