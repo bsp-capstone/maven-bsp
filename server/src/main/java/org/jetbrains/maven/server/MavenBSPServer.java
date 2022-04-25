@@ -13,12 +13,17 @@ import ch.epfl.scala.bsp4j.CompileParams;
 import ch.epfl.scala.bsp4j.CompileResult;
 import ch.epfl.scala.bsp4j.DependencyModulesParams;
 import ch.epfl.scala.bsp4j.DependencyModulesResult;
+import ch.epfl.scala.bsp4j.DependencySourcesItem;
 import ch.epfl.scala.bsp4j.DependencySourcesParams;
 import ch.epfl.scala.bsp4j.DependencySourcesResult;
 import ch.epfl.scala.bsp4j.InitializeBuildParams;
 import ch.epfl.scala.bsp4j.InitializeBuildResult;
 import ch.epfl.scala.bsp4j.InverseSourcesParams;
 import ch.epfl.scala.bsp4j.InverseSourcesResult;
+import ch.epfl.scala.bsp4j.JavaBuildServer;
+import ch.epfl.scala.bsp4j.JavacOptionsItem;
+import ch.epfl.scala.bsp4j.JavacOptionsParams;
+import ch.epfl.scala.bsp4j.JavacOptionsResult;
 import ch.epfl.scala.bsp4j.JvmBuildTarget;
 import ch.epfl.scala.bsp4j.ResourcesItem;
 import ch.epfl.scala.bsp4j.ResourcesParams;
@@ -58,18 +63,23 @@ import org.jetbrains.maven.project.MavenProjectWrapper;
 import org.jetbrains.maven.project.ProjectId;
 
 @Log4j2
-public class MavenBSPServer implements BuildServer {
+public class MavenBSPServer implements BuildServer, JavaBuildServer {
 
   @Setter public BuildClient client;
   private URI rootUri;
+  private MavenProjectWrapper mainProjectWrapper;
 
   @Override
   public CompletableFuture<InitializeBuildResult> buildInitialize(
       InitializeBuildParams initializeBuildParams) {
     log.info("MyBuildServer::buildInitialize started");
+    BuildServerCapabilities capabilities = new BuildServerCapabilities();
+    capabilities.setResourcesProvider(true);
+    capabilities.setDependencySourcesProvider(true);
     InitializeBuildResult initializeBuildResult =
-        new InitializeBuildResult("maven-bsp", "1.0.0", "1.0.0", new BuildServerCapabilities());
+        new InitializeBuildResult("maven-bsp", "1.0.0", "1.0.0", capabilities);
     rootUri = URI.create(initializeBuildParams.getRootUri());
+    mainProjectWrapper = MavenProjectWrapper.fromBase(rootUri);
     return CompletableFuture.completedFuture(initializeBuildResult);
   }
 
@@ -88,24 +98,24 @@ public class MavenBSPServer implements BuildServer {
 
   @Override
   public CompletableFuture<WorkspaceBuildTargetsResult> workspaceBuildTargets() {
-    MavenProjectWrapper projectWrapper = MavenProjectWrapper.fromBase(rootUri);
-    Map<ProjectId, MavenProjectWrapper> modulesMap = projectWrapper.getModuleProjects();
+    Map<ProjectId, MavenProjectWrapper> modulesMap = mainProjectWrapper.getModulesMap();
     List<BuildTarget> modulesResult = new ArrayList<>();
     for (Map.Entry<ProjectId, MavenProjectWrapper> module : modulesMap.entrySet()) {
       MavenProjectWrapper moduleProjectWrapper = module.getValue();
+      String moduleUri = moduleProjectWrapper.getProjectBase().toString();
       var target =
           new BuildTarget(
-              new BuildTargetIdentifier(moduleProjectWrapper.getProjectBase().toString()),
+              new BuildTargetIdentifier(moduleUri),
               List.of(),
-              List.of("JAVA"),
-              moduleProjectWrapper.getDependencies(modulesMap),
+              List.of("java"),
+              mainProjectWrapper.getInternalDependencies(moduleUri),
               new BuildTargetCapabilities(true, true, true, true));
       target.setDisplayName(moduleProjectWrapper.getProject().getName());
       log.info(
           "target {} project base {}",
           moduleProjectWrapper.getProject().getName(),
-          moduleProjectWrapper.getProjectBase().toString());
-      target.setBaseDirectory(moduleProjectWrapper.getProjectBase().toString());
+          moduleUri);
+      target.setBaseDirectory(moduleUri);
       target.setDataKind(BuildTargetDataKind.JVM);
       String javaHome = System.getProperty("java.home");
       String javaVersion = System.getProperty("java.version");
@@ -114,7 +124,7 @@ public class MavenBSPServer implements BuildServer {
           new JvmBuildTarget(
               // todo Resul:
               // https://maven.apache.org/plugins/maven-compiler-plugin/examples/compile-using-different-jdk.html
-              //
+              // https://maven.apache.org/plugins/maven-compiler-plugin/examples/set-compiler-source-and-target.html
               "file:" + javaHome, javaVersion));
       modulesResult.add(target);
     }
@@ -159,11 +169,22 @@ public class MavenBSPServer implements BuildServer {
   @Override
   public CompletableFuture<DependencySourcesResult> buildTargetDependencySources(
       DependencySourcesParams dependencySourcesParams) {
-    return CompletableFuture.completedFuture(new DependencySourcesResult(Collections.emptyList()));
+    log.info("MavenBSPServer::buildTargetDependencySources");
+    List<DependencySourcesItem> items = new ArrayList<>();
+
+    for (BuildTargetIdentifier target : dependencySourcesParams.getTargets()) {
+      DependencySourcesItem localRepoItem = new DependencySourcesItem(
+          target,
+          mainProjectWrapper.getExternalDependencies(target.getUri())
+      );
+      items.add(localRepoItem);
+    }
+    return CompletableFuture.completedFuture(new DependencySourcesResult(items));
   }
 
   @Override
   public CompletableFuture<ResourcesResult> buildTargetResources(ResourcesParams resourcesParams) {
+    log.info("buildTargetResources");
     List<BuildTargetIdentifier> targets = resourcesParams.getTargets();
     List<ResourcesItem> resources = new ArrayList<>();
     targets.forEach(
@@ -171,6 +192,7 @@ public class MavenBSPServer implements BuildServer {
           URI targetUri = URI.create(target.getUri());
           List<String> targetResources = new ArrayList<>();
           String resourceUri = targetUri.resolve("src/main/resources/").toString();
+          log.info("Target {} resourceUri {}", target, resourceUri);
           targetResources.add(resourceUri);
           resources.add(new ResourcesItem(target, targetResources));
         });
@@ -207,7 +229,26 @@ public class MavenBSPServer implements BuildServer {
   @Override
   public CompletableFuture<DependencyModulesResult> buildTargetDependencyModules(
       DependencyModulesParams dependencyModulesParams) {
+    log.info("MavenBSPServer::buildTargetDependencyModules");
     return CompletableFuture.completedFuture(new DependencyModulesResult(Collections.emptyList()));
+  }
+
+  @Override
+  public CompletableFuture<JavacOptionsResult> buildTargetJavacOptions(JavacOptionsParams params) {
+    log.info("MavenBSPServer::buildTargetJavacOptions");
+    List<JavacOptionsItem> items = new ArrayList<>();
+
+    for (BuildTargetIdentifier target : params.getTargets()) {
+      JavacOptionsItem item = new JavacOptionsItem(
+          target,
+          Collections.emptyList(),
+          mainProjectWrapper.getExternalDependencies(target.getUri()),
+          rootUri.toString()
+      );
+      items.add(item);
+    }
+
+    return CompletableFuture.completedFuture(new JavacOptionsResult(items));
   }
 
   public static void main(String[] args)
