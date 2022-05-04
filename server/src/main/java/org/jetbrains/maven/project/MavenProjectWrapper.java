@@ -29,14 +29,8 @@ public class MavenProjectWrapper {
     ProjectBuildingResult result = PomParser.buildMavenProject(base);
     Map<ProjectId, MavenProjectWrapper> modulesMap = new HashMap<>();
     Map<String, ProjectId> uriToProjectIdMap = new HashMap<>();
-    getModuleProjects(result.getProject(),
-        projectBase,
-        modulesMap,
-        uriToProjectIdMap);
-    return new MavenProjectWrapper(result,
-        projectBase,
-        modulesMap,
-        uriToProjectIdMap);
+    getModuleProjects(result.getProject(), projectBase, modulesMap, uriToProjectIdMap);
+    return new MavenProjectWrapper(result, projectBase, modulesMap, uriToProjectIdMap);
   }
 
   public List<BuildTargetIdentifier> getInternalDependencies(String moduleUri) {
@@ -50,19 +44,21 @@ public class MavenProjectWrapper {
         MavenProject dependentProject = modulesMap.get(projectId).getProject();
         String dependentProjectUri = dependentProject.getBasedir().toURI().toString();
         dependencies.add(new BuildTargetIdentifier(dependentProjectUri));
-        log.info("MavenProjectWrapper::getModuleProjects module {} dependency {}",
-            projectBase, dependentProjectUri);
+        log.info(
+            "MavenProjectWrapper::getModuleProjects module {} dependency {}",
+            projectBase,
+            dependentProjectUri);
       }
     }
     return dependencies;
   }
 
   public List<String> getExternalDependencies(String moduleUri) {
-    ProjectBuildingResult result = modulesMap.get(uriToProjectIdMap.get(moduleUri)).getBuildingResult();
+    ProjectBuildingResult result =
+        modulesMap.get(uriToProjectIdMap.get(moduleUri)).getBuildingResult();
     List<String> dependencies = new ArrayList<>();
-    for (org.eclipse.aether.graph.Dependency dependency : result
-        .getDependencyResolutionResult()
-        .getResolvedDependencies()) {
+    for (org.eclipse.aether.graph.Dependency dependency :
+        result.getDependencyResolutionResult().getResolvedDependencies()) {
       Artifact dependencyArtifact = dependency.getArtifact();
       ProjectId projectId =
           new ProjectId(
@@ -76,7 +72,8 @@ public class MavenProjectWrapper {
     return dependencies;
   }
 
-  private static void getModuleProjects(MavenProject main,
+  private static void getModuleProjects(
+      MavenProject main,
       URI projectBase,
       Map<ProjectId, MavenProjectWrapper> modulesMap,
       Map<String, ProjectId> uriToProjectIdMap) {

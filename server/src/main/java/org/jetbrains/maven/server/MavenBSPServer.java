@@ -111,10 +111,7 @@ public class MavenBSPServer implements BuildServer, JavaBuildServer {
               mainProjectWrapper.getInternalDependencies(moduleUri),
               new BuildTargetCapabilities(true, true, true, true));
       target.setDisplayName(moduleProjectWrapper.getProject().getName());
-      log.info(
-          "target {} project base {}",
-          moduleProjectWrapper.getProject().getName(),
-          moduleUri);
+      log.info("target {} project base {}", moduleProjectWrapper.getProject().getName(), moduleUri);
       target.setBaseDirectory(moduleUri);
       target.setDataKind(BuildTargetDataKind.JVM);
       String javaHome = System.getProperty("java.home");
@@ -173,10 +170,9 @@ public class MavenBSPServer implements BuildServer, JavaBuildServer {
     List<DependencySourcesItem> items = new ArrayList<>();
 
     for (BuildTargetIdentifier target : dependencySourcesParams.getTargets()) {
-      DependencySourcesItem localRepoItem = new DependencySourcesItem(
-          target,
-          mainProjectWrapper.getExternalDependencies(target.getUri())
-      );
+      DependencySourcesItem localRepoItem =
+          new DependencySourcesItem(
+              target, mainProjectWrapper.getExternalDependencies(target.getUri()));
       items.add(localRepoItem);
     }
     return CompletableFuture.completedFuture(new DependencySourcesResult(items));
@@ -239,12 +235,12 @@ public class MavenBSPServer implements BuildServer, JavaBuildServer {
     List<JavacOptionsItem> items = new ArrayList<>();
 
     for (BuildTargetIdentifier target : params.getTargets()) {
-      JavacOptionsItem item = new JavacOptionsItem(
-          target,
-          Collections.emptyList(),
-          mainProjectWrapper.getExternalDependencies(target.getUri()),
-          rootUri.toString()
-      );
+      JavacOptionsItem item =
+          new JavacOptionsItem(
+              target,
+              Collections.emptyList(),
+              mainProjectWrapper.getExternalDependencies(target.getUri()),
+              rootUri.toString());
       items.add(item);
     }
 
