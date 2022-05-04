@@ -8,54 +8,91 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Value;
+import lombok.extern.log4j.Log4j2;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingResult;
+import org.eclipse.aether.artifact.Artifact;
 
 // todo resul: add tests
 @Value
+@Log4j2
 public class MavenProjectWrapper {
 
   private final ProjectBuildingResult buildingResult;
   private final URI projectBase;
+  private final Map<ProjectId, MavenProjectWrapper> modulesMap;
+  private final Map<String, ProjectId> uriToProjectIdMap;
 
   public static MavenProjectWrapper fromBase(URI projectBase) {
     File base = new File(projectBase.resolve("pom.xml").getPath());
     ProjectBuildingResult result = PomParser.buildMavenProject(base);
-    return new MavenProjectWrapper(result, projectBase);
+    Map<ProjectId, MavenProjectWrapper> modulesMap = new HashMap<>();
+    Map<String, ProjectId> uriToProjectIdMap = new HashMap<>();
+    getModuleProjects(result.getProject(),
+        projectBase,
+        modulesMap,
+        uriToProjectIdMap);
+    return new MavenProjectWrapper(result,
+        projectBase,
+        modulesMap,
+        uriToProjectIdMap);
   }
 
-  public List<BuildTargetIdentifier> getDependencies(Map<ProjectId, MavenProjectWrapper> modules) {
-    MavenProject project = getProject();
+  public List<BuildTargetIdentifier> getInternalDependencies(String moduleUri) {
+    MavenProject project = modulesMap.get(uriToProjectIdMap.get(moduleUri)).getProject();
     List<BuildTargetIdentifier> dependencies = new ArrayList<>();
     for (Dependency dependency : project.getDependencies()) {
       ProjectId projectId =
           new ProjectId(
               dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion());
-      if (modules.containsKey(projectId)) {
-        MavenProject dependentProject = modules.get(projectId).getProject();
+      if (modulesMap.containsKey(projectId)) {
+        MavenProject dependentProject = modulesMap.get(projectId).getProject();
         String dependentProjectUri = dependentProject.getBasedir().toURI().toString();
         dependencies.add(new BuildTargetIdentifier(dependentProjectUri));
+        log.info("MavenProjectWrapper::getModuleProjects module {} dependency {}",
+            projectBase, dependentProjectUri);
       }
     }
     return dependencies;
   }
 
-  public Map<ProjectId, MavenProjectWrapper> getModuleProjects() {
-    MavenProject main = buildingResult.getProject();
+  public List<String> getExternalDependencies(String moduleUri) {
+    ProjectBuildingResult result = modulesMap.get(uriToProjectIdMap.get(moduleUri)).getBuildingResult();
+    List<String> dependencies = new ArrayList<>();
+    for (org.eclipse.aether.graph.Dependency dependency : result
+        .getDependencyResolutionResult()
+        .getResolvedDependencies()) {
+      Artifact dependencyArtifact = dependency.getArtifact();
+      ProjectId projectId =
+          new ProjectId(
+              dependencyArtifact.getGroupId(),
+              dependencyArtifact.getArtifactId(),
+              dependencyArtifact.getVersion());
+      if (!modulesMap.containsKey(projectId)) {
+        dependencies.add(dependency.getArtifact().getFile().toURI().toString());
+      }
+    }
+    return dependencies;
+  }
+
+  private static void getModuleProjects(MavenProject main,
+      URI projectBase,
+      Map<ProjectId, MavenProjectWrapper> modulesMap,
+      Map<String, ProjectId> uriToProjectIdMap) {
     List<String> modules = main.getModules();
-    Map<ProjectId, MavenProjectWrapper> modulesMap = new HashMap<>();
     for (String module : modules) {
       // Resul todo: Handle relative sub-module paths:
       // https://maven.apache.org/xsd/maven-4.0.0.xsd
       URI moduleURI = projectBase.resolve(module + "/");
+      log.info("Wrapper init for module {} of {}", moduleURI, projectBase.toString());
       MavenProjectWrapper wrapper = MavenProjectWrapper.fromBase(moduleURI);
       MavenProject project = wrapper.getProject();
       ProjectId projectId =
           new ProjectId(project.getGroupId(), project.getArtifactId(), project.getVersion());
       modulesMap.put(projectId, wrapper);
+      uriToProjectIdMap.put(moduleURI.toString(), projectId);
     }
-    return modulesMap;
   }
 
   public MavenProject getProject() {
