@@ -134,8 +134,15 @@ public class MavenController {
   }
 
   private String getExecutingJarPath() {
-    Path path = Paths.get(getClass().getProtectionDomain().getPermissions()
-        .elements().nextElement().getName()).getParent();
+    Path path =
+        Paths.get(
+                getClass()
+                    .getProtectionDomain()
+                    .getPermissions()
+                    .elements()
+                    .nextElement()
+                    .getName())
+            .getParent();
     return path.toString();
   }
 
