@@ -8,6 +8,15 @@ import ch.epfl.scala.bsp4j.ShowMessageParams;
 import ch.epfl.scala.bsp4j.StatusCode;
 import ch.epfl.scala.bsp4j.TaskId;
 import ch.epfl.scala.bsp4j.TaskProgressParams;
+import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Properties;
 import lombok.extern.log4j.Log4j2;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
@@ -15,13 +24,6 @@ import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.jetbrains.maven.server.EventPacket;
-import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Properties;
 
 // todo resul: pom errors not returned
 
@@ -102,19 +104,7 @@ public class MavenController {
     StatusCode exitCode = StatusCode.CANCELLED;
     Properties props = new Properties();
     Integer port = startServer(client);
-    String jarPath;
-    try {
-      jarPath =
-          new File("../event_listener/target/maven-listener-test-1.0-SNAPSHOT.jar")
-              .toPath()
-              .toRealPath()
-              .toString();
-    } catch (IOException e) {
-      e.printStackTrace();
-      log.error(e.getMessage());
-      return StatusCode.CANCELLED;
-    }
-
+    String jarPath = getExecutingJarPath() + "/event-listener-1.0-SNAPSHOT.jar/";
     props.setProperty("maven.ext.class.path", jarPath);
     request.setProperties(props);
     request.addShellEnvironment("BSP_EVENT_PORT", port.toString());
@@ -141,6 +131,12 @@ public class MavenController {
       log.error(e.getMessage());
     }
     return exitCode;
+  }
+
+  private String getExecutingJarPath() {
+    Path path = Paths.get(getClass().getProtectionDomain().getPermissions()
+        .elements().nextElement().getName()).getParent();
+    return path.toString();
   }
 
   private synchronized Integer startServer(BuildClient client) {
