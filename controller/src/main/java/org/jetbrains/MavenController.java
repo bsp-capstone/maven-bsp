@@ -64,10 +64,10 @@ public class MavenController {
   }
 
   public StatusCode compile(String projectDirectory) {
-    return compile(projectDirectory, false);
+    return compile(projectDirectory, false, true);
   }
 
-  public StatusCode compile(String projectDirectory, boolean clean) {
+  public StatusCode compile(String projectDirectory, boolean clean, boolean spy) {
     log.info("MavenController::compile started");
     InvocationRequest request = new DefaultInvocationRequest();
     if (clean) {
@@ -77,16 +77,16 @@ public class MavenController {
     }
     request.setBaseDirectory(new File(projectDirectory));
 
-    StatusCode ret = exec(request);
+    StatusCode ret = exec(request, spy);
     log.info("MavenController::compile ended");
     return ret;
   }
 
-  public StatusCode install(String projectDirectory) {
-    return install(projectDirectory, false);
+  public void installSilent(String projectDirectory) {
+    install(projectDirectory, false, false);
   }
 
-  public StatusCode install(String projectDirectory, boolean clean) {
+  public StatusCode install(String projectDirectory, boolean clean, boolean spy) {
     log.info("MavenController::install started");
     InvocationRequest request = new DefaultInvocationRequest();
     if (clean) {
@@ -95,20 +95,26 @@ public class MavenController {
       request.setGoals(Collections.singletonList("install"));
     }
     request.setBaseDirectory(new File(projectDirectory));
-    StatusCode ret = exec(request);
+    StatusCode ret = exec(request, spy);
     log.info("MavenController::install ended");
     return ret;
   }
 
-  private StatusCode exec(InvocationRequest request) {
+  private StatusCode exec(InvocationRequest request, boolean spy) {
     StatusCode exitCode = StatusCode.CANCELLED;
     Properties props = new Properties();
     Integer port = startServer(client);
-    String jarPath = getExecutingJarPath() + "/event-listener-1.0-SNAPSHOT.jar/";
-    props.setProperty("maven.ext.class.path", jarPath);
+
+    if(spy) {
+      String jarPath = getExecutingJarPath() + "/event-listener-1.0-SNAPSHOT.jar/";
+      props.setProperty("maven.ext.class.path", jarPath);
+    }
+
+
     request.setProperties(props);
     request.addShellEnvironment("BSP_EVENT_PORT", port.toString());
-    request.setOutputHandler(x -> {});
+    request.setOutputHandler(x -> {
+    });
 
     try {
       InvocationResult result = invoker.execute(request);
@@ -169,10 +175,12 @@ public class MavenController {
                     while (server.alive()) {
                       EventPacket eventPacket = server.getPacket();
                       String message = eventPacket.getEvent();
+
                       if (message != null) {
                         TaskProgressParams event = new TaskProgressParams(new TaskId("todo"));
                         event.setEventTime(System.currentTimeMillis());
                         event.setMessage(eventPacket.getEvent());
+
                         client.onBuildTaskProgress(event);
                         ShowMessageParams messageParams =
                             new ShowMessageParams(MessageType.INFORMATION, eventPacket.getEvent());
