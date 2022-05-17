@@ -47,14 +47,14 @@ class MavenControllerTest {
   }
 
   // TODO: Gevorg: mock Jar
-  //@Test
+  // @Test
   public void mockTest() {
     MavenController controller = new MavenController(fakeClient);
     controller.compile("src/test/mvn_test_project");
 
     Mockito.verify(fakeClient, times(4)).onBuildTaskProgress(progressArgument.capture());
     Mockito.verify(fakeClient, times(4)).onBuildShowMessage(messageArgument.capture());
-    for(int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
       System.out.println(messageArgument.getAllValues().get(i).getMessage());
       System.out.println(progressArgument.getAllValues().get(i).getMessage());
     }

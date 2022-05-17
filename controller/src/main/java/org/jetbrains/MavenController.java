@@ -105,16 +105,14 @@ public class MavenController {
     Properties props = new Properties();
     Integer port = startServer(client);
 
-    if(spy) {
+    if (spy) {
       String jarPath = getExecutingJarPath() + "/event-listener-1.0-SNAPSHOT.jar/";
       props.setProperty("maven.ext.class.path", jarPath);
     }
 
-
     request.setProperties(props);
     request.addShellEnvironment("BSP_EVENT_PORT", port.toString());
-    request.setOutputHandler(x -> {
-    });
+    request.setOutputHandler(x -> {});
 
     try {
       InvocationResult result = invoker.execute(request);

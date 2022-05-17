@@ -40,7 +40,7 @@ public class EventServerTest {
     int port = startServer();
     EventClient client = new EventClient("localhost", port + "");
 
-    for(int i = 1; i < (1<<30); i *=2) {
+    for (int i = 1; i < (1 << 30); i *= 2) {
       assertSend(client, i + "", 100);
     }
 
@@ -52,33 +52,34 @@ public class EventServerTest {
     int port = serverSocket.getLocalPort();
 
     new Thread(
-        new Runnable() {
-          private ServerSocket serverSocket;
-          public Runnable init(ServerSocket serverSocket) {
-            this.serverSocket = serverSocket;
-            return this;
-          }
+            new Runnable() {
+              private ServerSocket serverSocket;
 
-          @SneakyThrows
-          @Override
-          public void run() {
-            server = new EventServer(serverSocket);
+              public Runnable init(ServerSocket serverSocket) {
+                this.serverSocket = serverSocket;
+                return this;
+              }
 
-            while (server.alive()) {
-              EventPacket eventPacket = server.getPacket();
-              recvMessage = eventPacket.getEvent();
-              latch.countDown();
-            }
-            latch.countDown();
-          }
-        }.init(serverSocket)).start();
+              @SneakyThrows
+              @Override
+              public void run() {
+                server = new EventServer(serverSocket);
+
+                while (server.alive()) {
+                  EventPacket eventPacket = server.getPacket();
+                  recvMessage = eventPacket.getEvent();
+                  latch.countDown();
+                }
+                latch.countDown();
+              }
+            }.init(serverSocket))
+        .start();
     return port;
   }
 
   private void assertSend(EventClient client, String message, int times) throws IOException {
     latch = new CountDownLatch(times);
-    for(int i = 0; i < times; i++)
-      client.send(message);
+    for (int i = 0; i < times; i++) client.send(message);
 
     assertMessage(message);
   }
@@ -93,7 +94,6 @@ public class EventServerTest {
   @SneakyThrows
   private void assertMessage(String message) {
     latch.await();
-    if(recvMessage != null)
-      Assertions.assertEquals(message, recvMessage);
+    if (recvMessage != null) Assertions.assertEquals(message, recvMessage);
   }
 }
