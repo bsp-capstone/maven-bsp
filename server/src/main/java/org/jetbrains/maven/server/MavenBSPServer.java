@@ -117,9 +117,7 @@ public class MavenBSPServer implements BuildServer, JavaBuildServer {
       String javaHome = System.getProperty("java.home");
       String javaVersion = System.getProperty("java.version");
       log.info("java.home {} \n java.version {}", javaHome, javaVersion);
-      target.setData(
-          new JvmBuildTarget(
-              "file:" + javaHome, javaVersion));
+      target.setData(new JvmBuildTarget("file:" + javaHome, javaVersion));
       modulesResult.add(target);
     }
     return CompletableFuture.completedFuture(new WorkspaceBuildTargetsResult(modulesResult));

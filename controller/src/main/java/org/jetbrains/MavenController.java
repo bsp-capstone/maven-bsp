@@ -110,10 +110,11 @@ public class MavenController {
 
     request.setProperties(props);
     request.addShellEnvironment("BSP_EVENT_PORT", port.toString());
-    request.setOutputHandler(x -> {
-      x = "MAVEN OUTPUT: " + x;
-      log.info(x);
-    });
+    request.setOutputHandler(
+        x -> {
+          x = "MAVEN OUTPUT: " + x;
+          log.info(x);
+        });
 
     try {
       InvocationResult result = invoker.execute(request);
